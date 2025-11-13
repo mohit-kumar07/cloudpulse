@@ -1,0 +1,18 @@
+{
+    "mysql": {
+        "host": "127.0.0.1",
+        "user": "root",
+        "password": "your_password",
+        "database": "cloud_monitor"
+    },
+    "servicenow": {
+        "instance": "https://your_instance.service-now.com",
+        "user": "your_user",
+        "password": "your_pass"
+    },
+    "thresholds": {
+        "cpu": 80.0,
+        "memory": 80.0
+    },
+    "poll_interval": 30
+}
