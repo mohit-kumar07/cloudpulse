@@ -1,0 +1,15 @@
+[Unit]
+Description=CloudPulse Dashboard (Flask)
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/home/YOUR_USER/cloud_monitor_tracker_project/cloudpulse_dashboard
+EnvironmentFile=/home/YOUR_USER/cloud_monitor_tracker_project/cloudpulse_dashboard/.env
+ExecStart=/home/YOUR_USER/cloud_monitor_tracker_project/cloudpulse_dashboard/venv/bin/python /home/YOUR_USER/cloud_monitor_tracker_project/cloudpulse_dashboard/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

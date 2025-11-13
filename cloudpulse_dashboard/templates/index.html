@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CloudPulse Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { padding: 20px; }
+    .card { margin-bottom: 16px; }
+    canvas { max-height: 300px; }
+  </style>
+</head>
+<body>
+  <section class="section">
+    <div class="container">
+      <h1 class="title">CloudPulse — Live Dashboard</h1>
+      <p class="subtitle">Shows latest metrics and recent history</p>
+
+      <div class="columns">
+        <div class="column is-two-thirds">
+          <div class="card">
+            <header class="card-header"><p class="card-header-title">CPU & Memory (%)</p></header>
+            <div class="card-content">
+              <canvas id="cpuChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <header class="card-header"><p class="card-header-title">Network (KB/s)</p></header>
+            <div class="card-content">
+              <canvas id="netChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="column">
+          <div class="card">
+            <header class="card-header"><p class="card-header-title">Latest Metrics</p></header>
+            <div class="card-content">
+              <div id="latest">
+                Loading...
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <header class="card-header"><p class="card-header-title">Controls</p></header>
+            <div class="card-content">
+              <div class="field">
+                <label class="label">History points</label>
+                <div class="control">
+                  <input id="points" class="input" type="number" value="50" min="10" max="500">
+                </div>
+              </div>
+              <div class="buttons">
+                <button id="refresh" class="button is-primary">Refresh</button>
+                <button id="auto" class="button is-light">Auto</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+<script>
+let cpuChart, netChart, autoRefresh=false, timer=null;
+
+async function fetchLatest() {
+  const r = await fetch('/api/metrics/latest');
+  if (!r.ok) return null;
+  return await r.json();
+}
+async function fetchHistory(limit=50) {
+  const r = await fetch('/api/metrics/history?limit='+limit);
+  if (!r.ok) return [];
+  return await r.json();
+}
+
+function renderLatest(data){
+  const el = document.getElementById('latest');
+  if(!data){ el.innerText='No data'; return; }
+  el.innerHTML = `
+    <p><strong>Host:</strong> ${data.hostname || 'local'}</p>
+    <p><strong>Timestamp:</strong> ${data.timestamp}</p>
+    <p><strong>CPU:</strong> ${data.cpu_usage}%</p>
+    <p><strong>Memory:</strong> ${data.memory_usage}%</p>
+    <p><strong>Disk:</strong> ${data.disk_usage}%</p>
+    <p><strong>RX (KB/s):</strong> ${data.net_recv_kbps}</p>
+    <p><strong>TX (KB/s):</strong> ${data.net_trans_kbps}</p>
+  `;
+}
+
+function prepareCharts(labels, cpuData, memData, rxData, txData){
+  const ctx1 = document.getElementById('cpuChart').getContext('2d');
+  const ctx2 = document.getElementById('netChart').getContext('2d');
+  if(cpuChart) cpuChart.destroy();
+  if(netChart) netChart.destroy();
+
+  cpuChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'CPU %', data: cpuData, fill: false, tension:0.2, borderWidth:2 },
+        { label: 'Memory %', data: memData, fill: false, tension:0.2, borderWidth:2 }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false }
+  });
+
+  netChart = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'RX KB/s', data: rxData, fill:false, tension:0.2, borderWidth:2 },
+        { label: 'TX KB/s', data: txData, fill:false, tension:0.2, borderWidth:2 }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false }
+  });
+}
+
+async function refresh(){
+  const pts = parseInt(document.getElementById('points').value||50);
+  const hist = await fetchHistory(pts);
+  const labels = hist.map(row => row.timestamp);
+  const cpu = hist.map(r => parseFloat(r.cpu_usage||0));
+  const mem = hist.map(r => parseFloat(r.memory_usage||0));
+  const rx = hist.map(r => parseFloat(r.net_recv_kbps||0));
+  const tx = hist.map(r => parseFloat(r.net_trans_kbps||0));
+  prepareCharts(labels, cpu, mem, rx, tx);
+
+  const latest = await fetchLatest();
+  renderLatest(latest);
+}
+
+document.getElementById('refresh').addEventListener('click', refresh);
+document.getElementById('auto').addEventListener('click', ()=>{
+  autoRefresh = !autoRefresh;
+  document.getElementById('auto').innerText = autoRefresh ? 'Stop' : 'Auto';
+  if(autoRefresh){
+    timer = setInterval(refresh, 5000);
+  } else {
+    clearInterval(timer);
+  }
+});
+
+window.addEventListener('load', ()=>{ refresh(); });
+</script>
+
+</body>
+</html>
