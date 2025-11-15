@@ -6,7 +6,7 @@
 ![Made with Python](https://img.shields.io/badge/Python-3.13-yellow)
 ![Database](https://img.shields.io/badge/MariaDB-10.11+-brightgreen)
 ![Platform](https://img.shields.io/badge/Arch-Linux-blue)
-![Platform](https://img.shields.io/badge/ServiceNow-darkgreen)
+![Platform](https://img.shields.io/badge/ServiceNow-ITSM-darkgreen)
 
 
 ---
