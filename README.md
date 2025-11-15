@@ -2,11 +2,12 @@
 ### Intelligent Cloud Infrastructure Monitoring & Automated Incident Management  
 **C++ • Python • MariaDB • Arch Linux • ServiceNow**
 
-![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/cloudpulse?color=blue)
 ![Made with C++](https://img.shields.io/badge/C++-17-blue)
 ![Made with Python](https://img.shields.io/badge/Python-3.13-yellow)
 ![Database](https://img.shields.io/badge/MariaDB-10.11+-brightgreen)
 ![Platform](https://img.shields.io/badge/Arch-Linux-blue)
+![Platform](https://img.shields.io/badge/Servic-Now-blue)
+
 
 ---
 
