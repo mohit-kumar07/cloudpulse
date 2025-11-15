@@ -14,5 +14,12 @@
         "cpu": 80.0,
         "memory": 80.0
     },
+    "cooldowns": {
+        "cpu": 300,
+        "memory": 300,
+        "disk": 600,
+        "net_recv_kbps": 300,
+        "net_trans_kbps": 300 
+    },
     "poll_interval": 30
 }
