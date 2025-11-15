@@ -1,7 +1,7 @@
 {
     "mysql": {
         "host": "127.0.0.1",
-        "user": "root",
+        "user": "monitor",
         "password": "your_password",
         "database": "cloud_monitor"
     },
@@ -12,7 +12,10 @@
     },
     "thresholds": {
         "cpu": 80.0,
-        "memory": 80.0
+        "memory": 80.0,
+        "disk": 90.0,
+        "net_recv_kbps": 5000.0,
+        "net_trans_kbps": 3000.0
     },
     "cooldowns": {
         "cpu": 300,
