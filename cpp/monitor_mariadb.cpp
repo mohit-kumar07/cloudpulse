@@ -1,8 +1,5 @@
 // monitor_mariadb.cpp
-// C++ resource monitor that inserts CPU and memory usage into MariaDB using the C API.
-//
-// Build with: see CMakeLists.txt and instructions in README.
-// Requires mariadb (Connector/C) dev headers installed.
+// C++ resource monitor that inserts metrics into MariaDB using the C API.
 
 #include <iostream>
 #include <fstream>
@@ -13,11 +10,11 @@
 #include <vector>
 #include <stdexcept>
 #include <cstring>
-#include <sstream>      // <<-- needed for istringstream
+#include <sstream>
+#include <sys/statvfs.h>
 
 #include <mysql/mysql.h> // MariaDB / MySQL C API
 
-// read first line of /proc/stat, compute CPU usage percentage (simplified)
 static unsigned long long last_total = 0;
 static unsigned long long last_idle = 0;
 
@@ -27,7 +24,6 @@ float getCPUUsage() {
 
     std::string line;
     std::getline(file, line);
-    // Parse: cpu  user nice system idle iowait irq softirq steal ...
     std::istringstream ss(line);
     std::string cpu_label;
     unsigned long long user=0, nice=0, system=0, idle=0, iowait=0, irq=0, softirq=0, steal=0;
@@ -70,8 +66,17 @@ float getMemoryUsage() {
     return 100.0f * (float)(memTotal - memAvailable) / (float)memTotal;
 }
 
+float getDiskUsagePercent(const char* path = "/") {
+    struct statvfs stat;
+    if (statvfs(path, &stat) != 0) return 0.0f;
+    unsigned long long total = stat.f_blocks * (unsigned long long)stat.f_frsize;
+    unsigned long long avail = stat.f_bavail * (unsigned long long)stat.f_frsize;
+    if (total == 0) return 0.0f;
+    unsigned long long used = total - avail;
+    return 100.0f * (float)used / (float)total;
+}
+
 int main(int argc, char** argv) {
-    // DB config - you can later read these from a file or CLI args
     const char* db_host = "127.0.0.1";
     const char* db_user = "monitor";
     const char* db_pass = "1405";
@@ -79,7 +84,6 @@ int main(int argc, char** argv) {
     unsigned int db_port = 3306;
     int interval_seconds = 5;
 
-    // Initialize mysql library (optional)
     if (mysql_library_init(0, nullptr, nullptr)) {
         std::cerr << "Could not initialize MariaDB client library" << std::endl;
         return 1;
@@ -92,7 +96,6 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    // enable automatic reconnection
     my_bool reconnect = 1;
     mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
 
@@ -105,7 +108,6 @@ int main(int argc, char** argv) {
 
     std::cout << "Connected to MariaDB at " << db_host << " as " << db_user << std::endl;
 
-    // warm up CPU delta
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     getCPUUsage();
 
@@ -113,11 +115,11 @@ int main(int argc, char** argv) {
         try {
             float cpu = getCPUUsage();
             float mem = getMemoryUsage();
+            float disk = getDiskUsagePercent("/");
 
             std::cout << std::fixed << std::setprecision(2)
-                      << "CPU: " << cpu << "%  MEM: " << mem << "%" << std::endl;
+                      << "CPU: " << cpu << "%  MEM: " << mem << "%  DISK: " << disk << "%" << std::endl;
 
-            // Use snprintf to build query safely for numeric values
             char query[256];
             int qlen = snprintf(query, sizeof(query),
                 "INSERT INTO metrics (cpu_usage, memory_usage) VALUES (%.2f, %.2f)",
@@ -127,19 +129,6 @@ int main(int argc, char** argv) {
             } else {
                 if (mysql_query(conn, query)) {
                     std::cerr << "Insert failed: " << mysql_error(conn) << std::endl;
-                    // try to reconnect
-                    if (mysql_ping(conn) != 0) {
-                        std::cerr << "Ping failed, trying to reconnect..." << std::endl;
-                        mysql_close(conn);
-                        conn = mysql_init(nullptr);
-                        if (!mysql_real_connect(conn, db_host, db_user, db_pass, db_name, db_port, nullptr, 0)) {
-                            std::cerr << "Reconnect failed: " << mysql_error(conn) << std::endl;
-                            // wait before next attempt
-                            std::this_thread::sleep_for(std::chrono::seconds(5));
-                        } else {
-                            std::cerr << "Reconnected successfully" << std::endl;
-                        }
-                    }
                 }
             }
         } catch (const std::exception &ex) {
