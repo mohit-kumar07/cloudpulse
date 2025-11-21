@@ -172,10 +172,10 @@ int main(int argc, char** argv) {
                   << "CPU: " << cpu << "%  MEM: " << mem << "%  DISK: " << disk << "%  RX: " << rx_kbps << " KB/s  TX: " << tx_kbps << " KB/s"
                   << std::endl;
 
-        char query[256];
+        char query[512];
         int qlen = snprintf(query, sizeof(query),
-            "INSERT INTO metrics (cpu_usage, memory_usage) VALUES (%.2f, %.2f)",
-            cpu, mem);
+            "INSERT INTO metrics (cpu_usage, memory_usage, disk_usage, net_recv_kbps, net_trans_kbps) VALUES (%.2f, %.2f, %.2f, %.2f, %.2f)",
+            cpu, mem, disk, rx_kbps, tx_kbps);
         if (qlen <= 0 || qlen >= (int)sizeof(query)) {
             std::cerr << "Query build error" << std::endl;
         } else {
