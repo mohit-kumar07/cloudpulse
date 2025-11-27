@@ -1,0 +1,90 @@
+\
+        // monitor.cpp
+        // Simple Linux resource monitor that inserts CPU and memory usage into MySQL.
+        // Build with CMake. Requires MySQL Connector/C++ library installed.
+
+        #include <iostream>
+        #include <fstream>
+        #include <string>
+        #include <unistd.h>
+        #include <chrono>
+        #include <thread>
+        #include <stdexcept>
+        #include <iomanip>
+
+        // MySQL Connector/C++ headers
+        #include <mysql_driver.h>
+        #include <mysql_connection.h>
+        #include <cppconn/statement.h>
+        #include <cppconn/prepared_statement.h>
+
+        float getCPUUsage() {
+            std::ifstream file("/proc/stat");
+            if (!file.is_open()) return 0.0f;
+            std::string cpu;
+            unsigned long long user, nice, system, idle, iowait, irq, softirq, steal;
+            file >> cpu >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+            static unsigned long long prev_total = 0, prev_idle = 0;
+            unsigned long long idle_time = idle + iowait;
+            unsigned long long non_idle = user + nice + system + irq + softirq + steal;
+            unsigned long long total = idle_time + non_idle;
+            unsigned long long totald = total - prev_total;
+            unsigned long long idled = idle_time - prev_idle;
+            prev_total = total;
+            prev_idle = idle_time;
+            if (totald == 0) return 0.0f;
+            return (float)(100.0 * (totald - idled) / totald);
+        }
+
+        float getMemoryUsage() {
+            std::ifstream file("/proc/meminfo");
+            if (!file.is_open()) return 0.0f;
+            std::string key;
+            unsigned long long memTotal = 0, memAvailable = 0;
+            while (file >> key) {
+                if (key == "MemTotal:") { file >> memTotal; }
+                else if (key == "MemAvailable:") { file >> memAvailable; break; }
+                else { std::string skip; std::getline(file, skip); }
+            }
+            if (memTotal == 0) return 0.0f;
+            return (float)(100.0 * (memTotal - memAvailable) / memTotal);
+        }
+
+        int main(int argc, char** argv) {
+            std::string db_host = "127.0.0.1";
+            std::string db_user = "root";
+            std::string db_pass = "your_password";
+            std::string db_schema = "cloud_monitor";
+            int interval_seconds = 5;
+
+            try {
+                sql::mysql::MySQL_Driver *driver = sql::mysql::get_mysql_driver_instance();
+                std::unique_ptr<sql::Connection> con(driver->connect("tcp://127.0.0.1:3306", db_user, db_pass));
+                con->setSchema(db_schema);
+
+                while (true) {
+                    // Sleep a bit to allow CPU delta
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    float cpu = getCPUUsage();
+                    float mem = getMemoryUsage();
+
+                    std::cout << std::fixed << std::setprecision(2)
+                              << "CPU: " << cpu << "%  MEM: " << mem << "%" << std::endl;
+
+                    std::unique_ptr<sql::PreparedStatement> pstmt(
+                        con->prepareStatement("INSERT INTO metrics(cpu_usage, memory_usage) VALUES(?, ?)"));
+                    pstmt->setDouble(1, cpu);
+                    pstmt->setDouble(2, mem);
+                    pstmt->execute();
+
+                    std::this_thread::sleep_for(std::chrono::seconds(interval_seconds));
+                }
+            } catch (const sql::SQLException &e) {
+                std::cerr << "MySQL error: " << e.what() << std::endl;
+                return 2;
+            } catch (const std::exception &e) {
+                std::cerr << "Error: " << e.what() << std::endl;
+                return 3;
+            }
+            return 0;
+        }
