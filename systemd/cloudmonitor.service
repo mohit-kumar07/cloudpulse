@@ -1,0 +1,13 @@
+[Unit]
+Description=CloudPulse Monitor Agent
+After=network.target mysqld.service
+Wants=mysqld.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloud_monitor_agent
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
