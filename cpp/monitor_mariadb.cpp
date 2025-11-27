@@ -181,6 +181,17 @@ int main(int argc, char** argv) {
         } else {
             if (mysql_query(conn, query)) {
                 std::cerr << "Insert failed: " << mysql_error(conn) << std::endl;
+                if (mysql_ping(conn) != 0) {
+                    std::cerr << "Ping failed, attempting reconnect..." << std::endl;
+                    mysql_close(conn);
+                    conn = mysql_init(nullptr);
+                    if (!mysql_real_connect(conn, db_host, db_user, db_pass, db_name, db_port, nullptr, 0)) {
+                        std::cerr << "Reconnect failed: " << mysql_error(conn) << std::endl;
+                        std::this_thread::sleep_for(std::chrono::seconds(5));
+                    } else {
+                        std::cerr << "Reconnected." << std::endl;
+                    }
+                }
             }
         }
 
