@@ -1,0 +1,14 @@
+{
+    "mysql": {
+        "host": "127.0.0.1",
+        "user": "monitor",
+        "password": "your_db_password",
+        "database": "cloud_monitor"
+    },
+    "servicenow": {
+        "instance": "https://your_instance.service-now.com",
+        "user": "admin",
+        "password": "your_sn_password"
+    },
+    "poll_interval": 30
+}
