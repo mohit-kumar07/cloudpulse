@@ -1,10 +1,11 @@
 # integrator.py
-# Reads latest metrics from MariaDB.
+# Reads latest metrics from MySQL and creates incidents in ServiceNow for threshold breaches.
 
 import argparse
 import json
 import time
 import mysql.connector
+import requests
 from datetime import datetime
 
 def load_config(path):
@@ -22,6 +23,30 @@ def get_latest_metrics(dbcfg, limit=1):
     conn.close()
     return rows
 
+def create_incident(sn_cfg, short, desc, urgency='2', impact='2'):
+    url = sn_cfg['instance'].rstrip('/') + "/api/now/table/incident"
+    auth = (sn_cfg['user'], sn_cfg['password'])
+    payload = {
+        "short_description": short,
+        "description": desc,
+        "urgency": urgency,
+        "impact": impact
+    }
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    try:
+        r = requests.post(url, auth=auth, json=payload, headers=headers, timeout=15)
+    except Exception as e:
+        print(f"[-] Error calling ServiceNow API: {e}")
+        return False
+
+    if r.status_code in (200,201):
+        number = r.json().get('result', {}).get('number')
+        print(f"[+] Incident created: {number}")
+        return True
+    else:
+        print('[-] Failed to create incident:', r.status_code, r.text)
+        return False
+
 def now_ts():
     return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -32,6 +57,7 @@ def main():
 
     cfg = load_config(args.config)
     dbcfg = cfg['mysql']
+    sncfg = cfg['servicenow']
     poll_interval = cfg.get('poll_interval', 30)
 
     print(f"[{now_ts()}] Integrator started. Poll interval: {poll_interval}s")
