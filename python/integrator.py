@@ -60,7 +60,18 @@ def main():
     sncfg = cfg['servicenow']
     poll_interval = cfg.get('poll_interval', 30)
 
+    default_thresholds = {
+        'cpu': 80.0,
+        'memory': 80.0,
+        'disk': 90.0,
+        'net_recv_kbps': 5000.0,
+        'net_trans_kbps': 3000.0
+    }
+    thresholds = default_thresholds
+    thresholds.update(cfg.get('thresholds', {}))
+
     print(f"[{now_ts()}] Integrator started. Poll interval: {poll_interval}s")
+    print(f"Thresholds: {thresholds}")
 
     while True:
         try:
@@ -84,6 +95,18 @@ def main():
         tx = float(row.get('net_trans_kbps', 0.0) or 0.0)
 
         print(f"[{now_ts()}] {ts} -> CPU:{cpu:.2f}% MEM:{mem:.2f}% DISK:{disk:.2f}% RX:{rx:.2f}KB/s TX:{tx:.2f}KB/s")
+
+        if cpu > thresholds.get('cpu', default_thresholds['cpu']):
+            create_incident(sncfg, f'High CPU usage: {cpu:.2f}%', f'CPU at {cpu:.2f}% recorded at {ts}')
+        if mem > thresholds.get('memory', default_thresholds['memory']):
+            create_incident(sncfg, f'High Memory usage: {mem:.2f}%', f'Memory at {mem:.2f}% recorded at {ts}')
+        if disk > thresholds.get('disk', default_thresholds['disk']):
+            create_incident(sncfg, f'High Disk usage: {disk:.2f}%', f'Disk usage at {disk:.2f}% recorded at {ts}')
+        if rx > thresholds.get('net_recv_kbps', default_thresholds['net_recv_kbps']):
+            create_incident(sncfg, f'High Network Inbound: {rx:.2f} KB/s', f'Network inbound at {rx:.2f} KB/s recorded at {ts}')
+        if tx > thresholds.get('net_trans_kbps', default_thresholds['net_trans_kbps']):
+            create_incident(sncfg, f'High Network Outbound: {tx:.2f} KB/s', f'Network outbound at {tx:.2f} KB/s recorded at {ts}')
+
         time.sleep(poll_interval)
 
 if __name__ == '__main__':
