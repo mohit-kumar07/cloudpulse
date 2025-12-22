@@ -11,18 +11,23 @@
 #include <vector>
 #include <stdexcept>
 #include <cstring>
+#include <cstdlib>
 #include <sstream>
-#include <algorithm>
+#include <algorithm>    // <<-- added for std::replace
 #include <sys/statvfs.h>
 #include <map>
 
 #include <mysql/mysql.h> // MariaDB / MySQL C API
 
+// CPU tracking
 static unsigned long long last_total = 0;
 static unsigned long long last_idle = 0;
 
+// Network tracking (store previous totals per interface)
 struct NetTotals { unsigned long long rx = 0; unsigned long long tx = 0; };
 static std::map<std::string, NetTotals> prev_net;
+
+//--------------------------------- helpers -----------------------------------
 
 float getCPUUsage() {
     std::ifstream file("/proc/stat");
@@ -74,20 +79,23 @@ float getDiskUsagePercent(const char* path = "/") {
     return 100.0f * (float)used / (float)total;
 }
 
+// read /proc/net/dev and compute total rx/tx bytes across interfaces (except lo)
 std::pair<unsigned long long, unsigned long long> readNetTotals() {
     std::ifstream file("/proc/net/dev");
     unsigned long long tot_rx = 0, tot_tx = 0;
     if (!file.is_open()) return {0,0};
     std::string line;
+    // skip first two header lines
     std::getline(file, line);
     std::getline(file, line);
     while (std::getline(file, line)) {
         std::istringstream ss(line);
         std::string ifname;
         if (!(ss >> ifname)) continue;
+        // interface name ends with ':'
         if (ifname.back() == ':') ifname.pop_back();
         unsigned long long rx_bytes = 0, tx_bytes = 0;
-        ss >> rx_bytes;
+        ss >> rx_bytes; // first number after iface is rx bytes
         std::vector<unsigned long long> vals;
         vals.push_back(rx_bytes);
         unsigned long long v;
@@ -102,41 +110,44 @@ std::pair<unsigned long long, unsigned long long> readNetTotals() {
             for (int i=0;i<8;i++) ss2 >> v;
             ss2 >> tx_bytes;
         }
-        if (ifname == "lo") continue;
+        if (ifname == "lo") continue; // skip loopback
         tot_rx += rx_bytes;
         tot_tx += tx_bytes;
     }
     return {tot_rx, tot_tx};
 }
 
+// compute network rates (KB/s) since last call
 std::pair<float, float> getNetworkKbps(int interval_seconds) {
-    auto current = readNetTotals();
-    static unsigned long long last_rx = 0;
-    static unsigned long long last_tx = 0;
+    auto totals = readNetTotals();
+    unsigned long long rx = totals.first;
+    unsigned long long tx = totals.second;
 
-    if (last_rx == 0 && last_tx == 0) {
-        last_rx = current.first;
-        last_tx = current.second;
-        return {0.0f, 0.0f};
+    static unsigned long long prev_rx = 0, prev_tx = 0;
+    float rx_kbps = 0.0f, tx_kbps = 0.0f;
+
+    if (prev_rx != 0 || prev_tx != 0) {
+        long long drx = (long long)rx - (long long)prev_rx;
+        long long dtx = (long long)tx - (long long)prev_tx;
+        rx_kbps = (float)drx / 1024.0f / (float)interval_seconds;
+        tx_kbps = (float)dtx / 1024.0f / (float)interval_seconds;
+        if (rx_kbps < 0) rx_kbps = 0;
+        if (tx_kbps < 0) tx_kbps = 0;
     }
 
-    unsigned long long rx_diff = (current.first >= last_rx) ? (current.first - last_rx) : 0;
-    unsigned long long tx_diff = (current.second >= last_tx) ? (current.second - last_tx) : 0;
-
-    last_rx = current.first;
-    last_tx = current.second;
-
-    float rx_kbps = (float)rx_diff / 1024.0f / (float)interval_seconds;
-    float tx_kbps = (float)tx_diff / 1024.0f / (float)interval_seconds;
+    prev_rx = rx;
+    prev_tx = tx;
     return {rx_kbps, tx_kbps};
 }
 
+// ------------------------------- main -------------------------------------
+
 int main(int argc, char** argv) {
-    const char* db_host = "127.0.0.1";
-    const char* db_user = "monitor";
-    const char* db_pass = "1405";
-    const char* db_name = "cloud_monitor";
-    unsigned int db_port = 3306;
+    const char* db_host = getenv("DB_HOST") ? getenv("DB_HOST") : "127.0.0.1";
+    const char* db_user = getenv("DB_USER") ? getenv("DB_USER") : "monitor";
+    const char* db_pass = getenv("DB_PASS") ? getenv("DB_PASS") : "";
+    const char* db_name = getenv("DB_NAME") ? getenv("DB_NAME") : "cloud_monitor";
+    unsigned int db_port = getenv("DB_PORT") ? (unsigned int)atoi(getenv("DB_PORT")) : 3306;
     int interval_seconds = 5;
 
     if (mysql_library_init(0, nullptr, nullptr)) {
@@ -152,10 +163,12 @@ int main(int argc, char** argv) {
 
     if (!mysql_real_connect(conn, db_host, db_user, db_pass, db_name, db_port, nullptr, 0)) {
         std::cerr << "Connection failed: " << mysql_error(conn) << std::endl;
-        mysql_close(conn); mysql_library_end(); return 3; }
+        mysql_close(conn); mysql_library_end(); return 3;
+    }
 
     std::cout << "Connected to MariaDB at " << db_host << " as " << db_user << std::endl;
 
+    // warmup for CPU and network deltas
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     getCPUUsage();
     getNetworkKbps(interval_seconds);
@@ -172,6 +185,7 @@ int main(int argc, char** argv) {
                   << "CPU: " << cpu << "%  MEM: " << mem << "%  DISK: " << disk << "%  RX: " << rx_kbps << " KB/s  TX: " << tx_kbps << " KB/s"
                   << std::endl;
 
+        // Build insert with new columns
         char query[512];
         int qlen = snprintf(query, sizeof(query),
             "INSERT INTO metrics (cpu_usage, memory_usage, disk_usage, net_recv_kbps, net_trans_kbps) VALUES (%.2f, %.2f, %.2f, %.2f, %.2f)",
