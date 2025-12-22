@@ -1,0 +1,15 @@
+[Unit]
+Description=CloudPulse Integrator (ServiceNow incident automation)
+After=network.target mariadb.service cloudmonitor.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=mohit
+WorkingDirectory=/home/mohit/projects/cloudpulse
+ExecStart=/home/mohit/projects/cloudpulse/venv/bin/python /home/mohit/projects/cloudpulse/python/integrator.py --config /home/mohit/projects/cloudpulse/config/config.json
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
