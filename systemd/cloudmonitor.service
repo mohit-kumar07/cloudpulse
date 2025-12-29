@@ -1,11 +1,14 @@
 [Unit]
 Description=CloudPulse Monitor Agent
-After=network.target mysqld.service
-Wants=mysqld.service
+After=network.target mariadb.service
+Wants=mariadb.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cloud_monitor_agent
+User=mohit
+WorkingDirectory=/home/mohit/projects/cloudpulse
+EnvironmentFile=/home/mohit/projects/cloudpulse/cloudpulse_dashboard/.env
+ExecStart=/home/mohit/projects/cloudpulse/cpp/build/cloud_monitor_agent
 Restart=always
 RestartSec=5
 
