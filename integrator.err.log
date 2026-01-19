@@ -1,0 +1,34 @@
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+Traceback (most recent call last):
+  File "/home/mohit/cloud_resource_tracker_project/python/integrator.py", line 174, in <module>
+    main()
+    ~~~~^^
+  File "/home/mohit/cloud_resource_tracker_project/python/integrator.py", line 171, in main
+    time.sleep(poll_interval)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+KeyboardInterrupt
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+Traceback (most recent call last):
+  File "/home/mohit/cloud_resource_tracker_project/python/integrator.py", line 174, in <module>
+    main()
+    ~~~~^^
+  File "/home/mohit/cloud_resource_tracker_project/python/integrator.py", line 171, in main
+    time.sleep(poll_interval)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+KeyboardInterrupt
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+/home/mohit/cloud_resource_tracker_project/python/integrator.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
