@@ -4,3 +4,5 @@ build/
 *.out
 *.zip
 config/config.json
+cloudpulse_dashboard/.env
+venv/
