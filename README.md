@@ -8,6 +8,7 @@
 ![Platform](https://img.shields.io/badge/Arch-Linux-blue)
 ![Platform](https://img.shields.io/badge/ServiceNow-ITSM-darkgreen)
 
+
 ---
 
 ## 📌 Overview
@@ -19,6 +20,34 @@
 - **Python integrator** for automated incident creation
 - **ServiceNow ITSM** for ticketing workflows
 - **systemd services** for continuous background execution
+
+The goal of CloudPulse is to provide a **lightweight, cross-platform, production-ready monitoring agent** that automatically generates **ServiceNow incidents** when thresholds are breached.
+
+This is a complete final-year project with full source code, database schema, automation, and documentation.
+
+---
+
+## 🚀 Features
+
+### ✔ Real-Time Monitoring Agent (C++17)
+Collects system metrics:
+- CPU usage  
+- RAM usage  
+- Disk utilization  
+- Network throughput  
+
+### ✔ MariaDB Storage Layer  
+Optimized table for fast inserts with timestamp indexing.
+
+### ✔ Python Integrator with ServiceNow Automation  
+- Polls latest metrics  
+- Applies threshold rules  
+- Implements cooldown logic  
+- Creates incidents via REST API  
+
+### ✔ systemd Services  
+- `cloud_monitor_agent.service`  
+- `cloud_integrator.service`  
 
 ---
 
@@ -176,3 +205,19 @@ cloudpulse/
 │── systemd/
 │── README.md
 ```
+
+---
+
+## 📈 Future Enhancements
+
+- Web dashboard (React/Flask)
+- Multi-agent deployment
+- Prometheus/Grafana support
+- ML-based anomaly detection  
+- Dockerized agent  
+
+---
+
+## 👨‍💻 Authors  
+CloudPulse Team — Final Year B.Tech CSE  
+2025–2026
