@@ -123,3 +123,56 @@ Run:
 ```bash
 python integrator.py --config ../config/config.json
 ```
+
+---
+
+## 🔧 systemd Services
+
+### Agent
+```bash
+sudo cp systemd/cloud_monitor_agent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now cloud_monitor_agent.service
+```
+
+### Integrator
+```bash
+sudo cp systemd/cloud_integrator.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now cloud_integrator.service
+```
+
+---
+
+## 🧪 Testing
+
+### View latest metrics
+```bash
+mysql -u monitor -p -e "SELECT * FROM cloud_monitor.metrics ORDER BY timestamp DESC LIMIT 10;"
+```
+
+### Trigger stress:
+```bash
+stress-ng --cpu 4 --timeout 20
+stress-ng --vm 1 --vm-bytes 1G --timeout 20
+```
+
+### Verify ServiceNow incidents
+Visit:
+```
+https://yourinstance.service-now.com/nav_to.do?uri=incident_list.do
+```
+
+---
+
+## 📁 Project Structure
+
+```
+cloudpulse/
+│── cpp/
+│── python/
+│── config/
+│── sql/
+│── systemd/
+│── README.md
+```
