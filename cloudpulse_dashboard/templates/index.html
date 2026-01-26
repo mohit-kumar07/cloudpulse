@@ -56,6 +56,7 @@
               </div>
               <div class="buttons">
                 <button id="refresh" class="button is-primary">Refresh</button>
+                <button id="auto" class="button is-light">Auto</button>
               </div>
             </div>
           </div>
@@ -66,7 +67,7 @@
   </section>
 
 <script>
-let cpuChart, netChart;
+let cpuChart, netChart, autoRefresh=false, timer=null;
 
 async function fetchLatest() {
   const r = await fetch('/api/metrics/latest');
@@ -139,6 +140,16 @@ async function refresh(){
 }
 
 document.getElementById('refresh').addEventListener('click', refresh);
+document.getElementById('auto').addEventListener('click', ()=>{
+  autoRefresh = !autoRefresh;
+  document.getElementById('auto').innerText = autoRefresh ? 'Stop' : 'Auto';
+  if(autoRefresh){
+    timer = setInterval(refresh, 5000);
+  } else {
+    clearInterval(timer);
+  }
+});
+
 window.addEventListener('load', ()=>{ refresh(); });
 </script>
 
